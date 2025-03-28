@@ -2,7 +2,6 @@ const express = require('express')
 const router = express.Router()
 const tokenVerify = require('../MiddleWares/TokenVerify')
 const dotenv = require('dotenv')
-// Import the functions directly instead of making API calls
 const { detectNews, detectNewsFromGoogle, cleanJsonString } = require('./AINewsDetect')
 const { searchGoogle } = require('./SearchAPI')
 dotenv.config()
