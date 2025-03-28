@@ -5,9 +5,11 @@ const dotenv = require('dotenv');
 const { ElevenLabsClient } = require('elevenlabs')
 dotenv.config();
 
-// Log API key status for debugging
-console.log("GROQ API Key present:", !!process.env.GROQ_API_KEY);
-console.log("ElevenLabs API Key present:", !!process.env.ELEVENLABS_API_KEY);
+// Log API key status for debugging (only in development)
+if (process.env.NODE_ENV !== 'production') {
+    console.log("GROQ API Key present:", !!process.env.GROQ_API_KEY);
+    console.log("ElevenLabs API Key present:", !!process.env.ELEVENLABS_API_KEY);
+}
 
 // Use default keys if environment variables are not set
 const groqApiKey = process.env.GROQ_API_KEY || "your-groq-api-key";
@@ -36,7 +38,7 @@ async function streamAudio(text) {
         return Buffer.concat(chunks)
     }
     catch (error) {
-        console.log("Error in streamAudio Function:", error);
+        console.error("Error in streamAudio Function:", error);
         return null;
     }
 }
@@ -100,6 +102,7 @@ Make sure your response is in natural, conversational Hindi as if a real person 
                 model: "llama-3.3-70b-versatile",
                 temperature: 0.5,
                 max_tokens: 4096,
+                timeout: 20000 // 20 second timeout for Vercel
             });
             return completions.choices[0].message.content;
         } else {
@@ -109,7 +112,7 @@ Make sure your response is in natural, conversational Hindi as if a real person 
         }
     }
     catch (error) {
-        console.log("Error in Voice Route Speech Generation:", error);
+        console.error("Error in Voice Route Speech Generation:", error);
         
         // Return a simple Hindi response for testing if API call fails
         return "नमस्ते दोस्तों! यह एक परीक्षण संदेश है। हमारे एपीआई में समस्या आई है, लेकिन हम इसे जल्द ही ठीक कर देंगे।";
@@ -122,7 +125,8 @@ router.post('/', async (req, res) => {
     if (!req.body || !req.body.text) {
         return res.status(400).json({
             message: "Text not provided",
-            status: 400
+            status: false,
+            code: "MISSING_TEXT"
         });
     }
 
@@ -137,24 +141,28 @@ router.post('/', async (req, res) => {
         let speechForTheAudio = await getMySpeech(textData, analysisData);
 
         if (!speechForTheAudio) {
-            return res.status(400).json({
+            return res.status(500).json({
                 message: "Speech generation failed",
                 advice: "Check Groq API configuration",
-                status: 400
+                status: false,
+                code: "SPEECH_GEN_FAILED"
             });
         }
 
         console.log("Generated Hindi speech text, length:", speechForTheAudio.length);
-        console.log("First 100 chars of Hindi speech:", speechForTheAudio.substring(0, 100));
+        if (process.env.NODE_ENV !== 'production') {
+            console.log("First 100 chars of Hindi speech:", speechForTheAudio.substring(0, 100));
+        }
         
         // Convert speech to audio
         const audioBuffer = await streamAudio(speechForTheAudio);
         
         if (!audioBuffer) {
-            return res.status(400).json({
+            return res.status(500).json({
                 message: "Audio generation failed",
                 advice: "Check ElevenLabs API key",
-                status: 400
+                status: false,
+                code: "AUDIO_GEN_FAILED"
             });
         }
         
@@ -171,10 +179,14 @@ router.post('/', async (req, res) => {
         console.error("Error in voice generation route:", error);
         return res.status(500).json({
             message: "Server error in voice generation",
-            error: error.message,
-            status: 500
+            error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
+            status: false,
+            code: "VOICE_SERVER_ERROR"
         });
     }
 });
 
 module.exports = router;
+// Export helper functions for use in other files if needed
+module.exports.streamAudio = streamAudio;
+module.exports.getMySpeech = getMySpeech;

@@ -3,7 +3,7 @@ const router = express.Router()
 const tokenVerify = require('../MiddleWares/TokenVerify')
 const dotenv = require('dotenv')
 // Import the functions directly instead of making API calls
-const { detectNews, detectNewsFromGoogle } = require('./AINewsDetect')
+const { detectNews, detectNewsFromGoogle, cleanJsonString } = require('./AINewsDetect')
 const { searchGoogle } = require('./SearchAPI')
 dotenv.config()
 
@@ -95,11 +95,9 @@ router.post('/', tokenVerify, async (req, res) => {
         
         // Process the result as before
         try {
-            // Assuming cleanJsonString is imported or defined elsewhere
-            // Parse the JSON result
-            const cleanedResult = typeof detectionResult === 'string' 
-                ? JSON.parse(detectionResult.replace(/```json\n?|\n?```/g, '').trim())
-                : detectionResult;
+            // Use imported cleanJsonString function to clean and parse the result
+            const cleanedJsonString = cleanJsonString(detectionResult);
+            const cleanedResult = JSON.parse(cleanedJsonString);
             
             if (cleanedResult) {
                 return res.status(200).json({
@@ -135,3 +133,5 @@ router.post('/', tokenVerify, async (req, res) => {
 })
 
 module.exports = router
+// Export the extractNewsLink function for use in other files
+module.exports.extractNewsLink = extractNewsLink
