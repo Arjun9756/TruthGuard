@@ -6,8 +6,9 @@ const TokenVerify = (req, res, next) => {
         
         if (!authHeader) {
             return res.status(401).json({
-                message: "No token provided",
-                status: false
+                message: "Authentication required. No token provided.",
+                status: false,
+                code: "NO_TOKEN"
             });
         }
 
@@ -15,20 +16,47 @@ const TokenVerify = (req, res, next) => {
         
         if (!token) {
             return res.status(401).json({
-                message: "Invalid token format",
-                status: false
+                message: "Invalid token format. Use 'Bearer [token]'",
+                status: false,
+                code: "INVALID_FORMAT"
             });
         }
 
-        const tokenData = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = tokenData;
-        next();
-        
+        try {
+            const tokenData = jwt.verify(token, process.env.JWT_SECRET);
+            req.user = { ...tokenData, token };  // Include the token for convenience
+            next();
+        } catch (jwtError) {
+            // Handle specific JWT verification errors
+            if (jwtError.name === 'TokenExpiredError') {
+                return res.status(401).json({
+                    message: "Token has expired. Please login again.",
+                    status: false,
+                    code: "TOKEN_EXPIRED"
+                });
+            } else if (jwtError.name === 'JsonWebTokenError') {
+                return res.status(401).json({
+                    message: "Invalid token. Please login again.",
+                    status: false,
+                    code: "INVALID_TOKEN"
+                });
+            } else {
+                // For other JWT errors
+                return res.status(401).json({
+                    message: "Authentication failed",
+                    error: jwtError.message,
+                    status: false,
+                    code: "AUTH_FAILED"
+                });
+            }
+        }
     } catch (error) {
-        return res.status(401).json({
-            message: "Invalid token",
-            error: error.message,
-            status: false
+        console.error("Auth middleware error:", error);
+        return res.status(500).json({
+            message: "Server error during authentication",
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+            status: false,
+            code: "SERVER_ERROR"
         });
     }
 }

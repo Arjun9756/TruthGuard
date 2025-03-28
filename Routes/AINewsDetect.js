@@ -37,14 +37,17 @@ async function detectNews(newsText, newsLink) {
     }
 }
 
-async function detectNewsFromGoogle(newsText , newsLink , googleSearchResult) {
+async function detectNewsFromGoogle(newsText, newsLink, googleSearchResult) {
     const prompt = `You are a professional fact-checker and news authenticity expert. Analyze the provided news content and compare it with the latest Google search results to determine if it's REAL or FAKE news.
 
     News Content: "${newsText}"
     News URL: "${newsLink}"
 
     Google Search Results (Latest Data):
-    ${googleSearchResult}
+    ${googleSearchResult.data ? googleSearchResult.data.map((snippet, index) => `Result ${index + 1}: ${snippet}`).join("\n\n") : "No search results available"}
+    
+    ${googleSearchResult.totalResults ? `Total Results Found: ${googleSearchResult.totalResults}` : ""}
+    ${googleSearchResult.searchTime ? `Search Time: ${googleSearchResult.searchTime} seconds` : ""}
 
     Analyze both the news content and Google search results to provide a detailed fact-check. Focus on:
     1. Factual consistency between the news and search results
@@ -74,12 +77,13 @@ async function detectNewsFromGoogle(newsText , newsLink , googleSearchResult) {
             messages:[{role:"user",content:prompt}],
             model:"llama-3.3-70b-versatile",
             temperature:0.3,
-            max_tokens:2048
+            max_tokens:2048,
+            timeout: 15000 // Adding timeout for Vercel serverless functions
         })
         return completion.choices[0].message.content
     }
     catch(error){
-        console.error("Error in detecting news from google:",error)
+        console.error("Error in detecting news from google:", error)
         return null
     }
 }
@@ -136,7 +140,7 @@ router.post('/v2', async (req, res) => {
         console.log("Formatted search results:", formattedSearchResults.substring(0, 200) + "...")
         
         // Now pass the formatted search results to the AI
-        let result = await detectNewsFromGoogle(newsText, newsLink, formattedSearchResults)
+        let result = await detectNewsFromGoogle(newsText, newsLink, googleSearchResult)
         
         // Clean and parse the result
         try {
@@ -189,3 +193,7 @@ router.post('/voice' , (req,res)=>{
 })
 
 module.exports = router
+// Export the detectNews and detectNewsFromGoogle functions for use in other files
+module.exports.detectNews = detectNews
+module.exports.detectNewsFromGoogle = detectNewsFromGoogle
+module.exports.cleanJsonString = cleanJsonString

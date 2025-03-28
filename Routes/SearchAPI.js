@@ -21,6 +21,7 @@ async function searchGoogle(query , numResults = 2){
         }
     }
     catch(error){
+        console.error("Google search error:", error.message);
         return{
             success:false,
             error:error.message || "An error occurred while searching"
@@ -62,6 +63,7 @@ router.post('/' , async (req,res)=>{
         }
     }
     catch(error){
+        console.error("Search API error:", error.message);
         return res.status(500).json({
             success:false,
             error:error.message || "An error occurred while processing the request"
@@ -70,3 +72,5 @@ router.post('/' , async (req,res)=>{
 })
 
 module.exports = router
+// Export the searchGoogle function so it can be used by other files
+module.exports.searchGoogle = searchGoogle

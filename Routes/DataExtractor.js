@@ -2,7 +2,9 @@ const express = require('express')
 const router = express.Router()
 const tokenVerify = require('../MiddleWares/TokenVerify')
 const dotenv = require('dotenv')
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args))
+// Import the functions directly instead of making API calls
+const { detectNews, detectNewsFromGoogle } = require('./AINewsDetect')
+const { searchGoogle } = require('./SearchAPI')
 dotenv.config()
 
 function extractNewsLink(text) {
@@ -45,86 +47,77 @@ router.post('/', tokenVerify, async (req, res) => {
             textwithoutLink = textwithoutLink.replace(link, '').trim()
         })
 
-        // First AI call to get title
-        let response = await fetch(`${process.env.API_URL}/ai-news-detect`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${req.user.token}`
-            },
-            body: JSON.stringify({
-                newsText: textwithoutLink,
-                newsLink: newsLinks
-            })
-        })
-
-        let result = await response.json()
+        // Call the detectNews function directly instead of making an API call
+        let result = await detectNews(textwithoutLink, newsLinks[0] || "")
         console.log("AI Title Result:", result)
 
-        if (!result || !result.status) {
+        if (!result) {
             return res.status(500).json({
                 message: "Error in detecting news title",
                 status: false,
                 advice: "Please Contact Backend Developer Its an Server Error",
-                AI_RESPONSE: "Failed to Detect News AI Error",
-                Route: "/ai-news-detect"
+                AI_RESPONSE: "Failed to Detect News AI Error"
             })
         }
 
         // Clean up the query by removing quotes
-        const cleanQuery = result.data.replace(/["']/g, '').trim()
+        const cleanQuery = result.replace(/["']/g, '').trim()
         console.log("Clean search query:", cleanQuery)
 
-        // Google search with clean query
-        let googleSearchQuery = await fetch(`${process.env.API_URL}/search`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${req.user.token}`,
-                version: "v1"
-            },
-            body: JSON.stringify({
-                query: cleanQuery
-            })
-        })
-
-        let googleSearchResult = await googleSearchQuery.json()
+        // Call searchGoogle directly instead of making an API call
+        let googleSearchResult = await searchGoogle(cleanQuery, 2)
         console.log("Google search result:", googleSearchResult)
 
-        if (!googleSearchResult) {
+        if (!googleSearchResult || !googleSearchResult.success) {
             return res.status(500).json({
                 message: "Error in searching news",
                 status: false,
                 advice: "Please Contact Backend Developer Its an Server Error",
-                AI_RESPONSE: "Failed to Search News AI Error",
-                Route: "/search"
+                AI_RESPONSE: "Failed to Search News AI Error"
             })
         }
 
-        // Final AI analysis with Google results
-        let mixtralResponse = await fetch(`${process.env.API_URL}/ai-news-detect/v2`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${req.user.token}`,
-                version: "v2"
-            },
-            body: JSON.stringify({
-                newsText: textwithoutLink,
-                newsLink: newsLinks,
-                googleSearchResult: googleSearchResult
-            })
-        })
-
-        let mixtralResult = await mixtralResponse.json()
-        console.log("Final AI analysis:", mixtralResult)
-
-        if (mixtralResult.status === true) {
-            return res.status(200).json({
-                status: true,
-                data: mixtralResult.data
-            })
+        // Format Google search results in the same way as the SearchAPI
+        let googleSearchObjectData = []
+        let objectOfData = googleSearchResult.result || []
+        for(let i=0; i < objectOfData.length; i++) {
+            googleSearchObjectData.push(objectOfData[i].snippet)
         }
+
+        let formattedSearchResults = {
+            data: googleSearchObjectData,
+            totalResults: googleSearchResult.totalResults,
+            searchTime: googleSearchResult.searchTime
+        }
+
+        // Call detectNewsFromGoogle directly instead of making an API call
+        let detectionResult = await detectNewsFromGoogle(textwithoutLink, newsLinks[0] || "", formattedSearchResults)
+        
+        // Process the result as before
+        try {
+            // Assuming cleanJsonString is imported or defined elsewhere
+            // Parse the JSON result
+            const cleanedResult = typeof detectionResult === 'string' 
+                ? JSON.parse(detectionResult.replace(/```json\n?|\n?```/g, '').trim())
+                : detectionResult;
+            
+            if (cleanedResult) {
+                return res.status(200).json({
+                    status: true,
+                    data: cleanedResult
+                })
+            }
+        } catch (parseError) {
+            console.error("Failed to parse AI response:", parseError);
+            console.error("Raw response:", detectionResult);
+            return res.status(500).json({
+                message: "Failed to parse AI response",
+                status: false,
+                error: parseError.message,
+                rawResponse: detectionResult
+            });
+        }
+
         return res.status(500).json({
             status: false,
             message: "Error in detecting news",
