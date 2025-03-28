@@ -29,15 +29,15 @@ app.get('/' , (req , res)=>{
     })
 })
 
-app.use('/login' , Login)
+// All API routes
+app.use('/login', Login)
+app.use('/ai-news-detect', AINewsDetect)
+app.use('/signup', Signup)
+app.use('/data', DataExtractor)
+app.use('/search', SearchAPI)
+app.use('/getaudio', VoiceGenerate)
 
-app.use('/ai-news-detect' , AINewsDetect)
-
-app.use('/signup' , Signup)
-app.use('/data' , DataExtractor)
-app.use('/search' , SearchAPI)
-app.use('/getaudio' , VoiceGenerate)
-
+// Server start for local development
 if (process.env.NODE_ENV !== 'production') {
     const port = process.env.PORT || 5000;
     app.listen(port, () => {
