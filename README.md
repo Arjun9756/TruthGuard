@@ -26,7 +26,7 @@ The backend system is built with multiple interconnected components:
 4. **Data Processing Pipeline**
 ```text
 News Input → Text Extraction → AI Analysis → Google Search → 
-Cross-Reference → Credibility Check → Final Verdict
+Cross-Reference → Credibility Check → Voice Generation → Final Verdict
 ```
 
 ### Key Features
@@ -36,6 +36,7 @@ Cross-Reference → Credibility Check → Final Verdict
 - Warning flags detection
 - Confidence level assessment
 - Detailed reasoning and verification steps
+- Hindi voice analysis for accessibility
 
 ### Technical Stack
 - **Frontend**: HTML5, TailwindCSS, JavaScript
@@ -44,6 +45,7 @@ Cross-Reference → Credibility Check → Final Verdict
 - **APIs**: 
   - Groq API (AI Analysis)
   - Google Custom Search API (Fact Checking)
+  - ElevenLabs API (Voice Generation)
 - **Authentication**: JWT
 - **Deployment**: Netlify (Frontend), Heroku (Backend)
 
@@ -68,6 +70,7 @@ POST /ai-news-detect     - Initial AI analysis
 POST /ai-news-detect/v2  - Detailed analysis with search results
 POST /search            - Google search integration
 POST /data             - Main analysis pipeline
+POST /voice            - Hindi voice analysis generation
 ```
 
 ### Response Format
@@ -111,6 +114,7 @@ MONGODB_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
 SEARCH_API_KEY=your_google_search_api_key
 SEARCH_ENGINE_ID=your_search_engine_id
+IIEVLEVENLABS_API_KEY=your_elevenlabs_api_key
 PORT=5000
 ```
 
