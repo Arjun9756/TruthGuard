@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruthGuard - AI Fake News Detector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .gradient-animate {
+            background: linear-gradient(-45deg, #1a1a1a, #2d3748, #1a365d, #2d3748);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        .typing-animation::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .score-bar {
+            transition: width 1.5s ease-out;
+        }
+
+        .red-flag-item {
+            animation: slideInLeft 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .verdict-fake {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            animation: pulseFake 2s infinite;
+        }
+
+        .verdict-real {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            animation: pulseReal 2s infinite;
+        }
+
+        @keyframes pulseFake {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 20px 0 rgba(239, 68, 68, 0.4); }
+        }
+
+        @keyframes pulseReal {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 20px 0 rgba(16, 185, 129, 0.4); }
+        }
+    </style>
+</head>
+<body class="gradient-animate min-h-screen text-white">
+    <nav class="bg-gray-900 bg-opacity-60 backdrop-blur-lg p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
+                TruthGuard
+            </div>
+            <button onclick="logout()" 
+                class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition duration-200">
+                Logout
+            </button>
+        </div>
+    </nav>
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12 slide-up">
+            <h1 class="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
+                TruthGuard
+            </h1>
+            <p class="text-xl text-gray-300">AI-Powered Fake News Detection System</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="max-w-3xl mx-auto bg-gray-900 bg-opacity-60 backdrop-blur-lg rounded-xl p-6 shadow-2xl slide-up">
+            <!-- Input Form -->
+            <form id="newsForm" class="space-y-6">
+                <div class="space-y-4">
+                    <label class="block text-gray-300 text-lg font-medium">Enter News Text or URL</label>
+                    <textarea 
+                        name="text" 
+                        class="w-full h-40 px-4 py-3 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition duration-200"
+                        placeholder="Paste your news article or URL here..."
+                    ></textarea>
+                </div>
+
+                <div class="flex justify-center">
+                    <button 
+                        type="submit" 
+                        class="group relative px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg font-semibold text-white transform transition duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <span class="flex items-center space-x-2">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Analyze News</span>
+                        </span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Loading Animation -->
+            <div id="loading" class="hidden mt-8 text-center">
+                <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm rounded-md text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:bg-indigo-400 transition ease-in-out duration-150 cursor-not-allowed">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Analyzing with AI...
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results" class="hidden mt-8 space-y-6">
+                <div class="p-6 bg-gray-800 rounded-lg shadow-lg slide-up">
+                    <h3 class="text-xl font-bold mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
+                        Analysis Results
+                    </h3>
+
+                    <!-- Voice Analysis Button -->
+                    <div class="mb-6 text-center">
+                        <button id="voiceButton" 
+                            class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg text-white font-medium transition duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-center mx-auto">
+                            <i class="fas fa-volume-up mr-2"></i>
+                            Listen to Hindi Analysis
+                            <span id="voiceLoading" class="hidden ml-2">
+                                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </span>
+                        </button>
+                        <div class="flex justify-center mt-4">
+                            <audio id="voiceAudio" class="hidden mx-auto" controls></audio>
+                        </div>
+                    </div>
+
+                    <!-- Authenticity Score -->
+                    <div class="mb-8 scale-up">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-300">Authenticity Score</span>
+                            <span class="text-lg font-bold authenticity-score">0%</span>
+                        </div>
+                        <div class="h-4 bg-gray-700 rounded-full overflow-hidden">
+                            <div class="score-bar h-full bg-gradient-to-r from-red-500 to-green-500 transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Verdict Badge -->
+                    <div class="mb-8 text-center scale-up" style="animation-delay: 0.2s">
+                        <div id="verdictBadge" class="inline-block px-6 py-3 rounded-lg text-lg font-bold">
+                            <!-- Will be filled dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Warning Flags Section -->
+                    <div class="mb-8 scale-up" style="animation-delay: 0.3s">
+                        <h4 class="text-lg font-semibold mb-4 text-red-400">
+                            <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Warning Signs Detected
+                        </h4>
+                        <ul id="warningList" class="space-y-3">
+                            <!-- Will be filled dynamically -->
+                        </ul>
+                    </div>
+
+                    <!-- URL Analysis -->
+                    <div class="mb-8 scale-up" style="animation-delay: 0.4s">
+                        <h4 class="text-lg font-semibold mb-4 text-blue-400">
+                            <i class="fas fa-link mr-2"></i>URL Credibility
+                        </h4>
+                        <div id="urlCredibility" class="p-4 bg-gray-700 rounded-lg">
+                            <!-- Will be filled dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Confidence Level -->
+                    <div class="scale-up" style="animation-delay: 0.5s">
+                        <h4 class="text-lg font-semibold mb-4 text-purple-400">
+                            <i class="fas fa-chart-line mr-2"></i>Confidence Level
+                        </h4>
+                        <div id="confidenceLevel" class="text-lg font-medium">
+                            <!-- Will be filled dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/notifications.js"></script>
+
+    <script>
+        function displayResults(result) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.classList.remove('hidden');
+            
+            // Parse the backend response
+            const data = result.data;
+            
+            // Check if the response contains a final_verdict
+            const is_fake = data.final_verdict === "FAKE";
+            
+            // Get authenticity score
+            const authenticity_score = data.authenticity_score || 0;
+            
+            // Update authenticity score and bar
+            const scoreBar = document.querySelector('.score-bar');
+            const scoreText = document.querySelector('.authenticity-score');
+
+            // Set score bar color based on verdict
+            scoreBar.className = `score-bar h-full transition-all duration-1000 ${is_fake ? 'bg-gradient-to-r from-red-600 to-red-400' : 'bg-gradient-to-r from-green-600 to-green-400'}`;
+            
+            // Animate score
+            scoreBar.style.width = '0%';
+            scoreText.textContent = '0%';
+            setTimeout(() => {
+                scoreBar.style.width = `${authenticity_score}%`;
+                scoreText.textContent = `${authenticity_score}%`;
+            }, 100);
+            
+            // Update verdict badge
+            const verdictBadge = document.getElementById('verdictBadge');
+            verdictBadge.className = is_fake ? 'verdict-fake inline-block px-6 py-3 rounded-lg text-lg font-bold' 
+                                            : 'verdict-real inline-block px-6 py-3 rounded-lg text-lg font-bold';
+            verdictBadge.innerHTML = `
+                <i class="fas ${is_fake ? 'fa-times-circle' : 'fa-check-circle'} mr-2"></i>
+                ${is_fake ? 'FAKE NEWS DETECTED' : 'LEGITIMATE NEWS'}
+            `;
+
+            // Update warning/credibility section
+            const warningList = document.getElementById('warningList');
+            const warnings = is_fake ? data.red_flags : data.credibility_indicators;
+            warningList.innerHTML = warnings.map((warning, index) => `
+                <li class="red-flag-item flex items-start space-x-2 p-3 ${is_fake ? 'bg-red-900/30' : 'bg-green-900/30'} rounded-lg" 
+                    style="animation-delay: ${index * 0.1}s">
+                    <i class="fas ${is_fake ? 'fa-exclamation-circle text-red-500' : 'fa-check-circle text-green-500'} mt-1"></i>
+                    <span>${warning}</span>
+                    </li>
+                `).join('');
+
+            // Update URL credibility
+            const urlCredibilityDiv = document.getElementById('urlCredibility');
+            urlCredibilityDiv.className = `p-4 rounded-lg ${data.url_credibility.is_suspicious ? 'bg-red-900/30' : 'bg-gray-700'}`;
+            urlCredibilityDiv.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="fas ${data.url_credibility.is_suspicious ? 'fa-exclamation-circle text-red-500' : 'fa-check-circle text-green-500'}"></i>
+                    <span>${data.url_credibility.domain_analysis}</span>
+                </div>
+            `;
+
+            // Update confidence level
+            const confidenceLevelDiv = document.getElementById('confidenceLevel');
+            confidenceLevelDiv.innerHTML = `
+                <div class="mb-2">AI Confidence: ${data.confidence_level}%</div>
+                <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-purple-600 transition-all duration-1000" 
+                         style="width: ${data.confidence_level}%"></div>
+                            </div>
+                <div class="mt-4 text-sm">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    ${data.summary}
+                </div>
+            `;
+
+            // Show detailed analysis if available
+            if (data.detailed_reasoning) {
+                const detailedAnalysis = document.createElement('div');
+                detailedAnalysis.className = 'mt-6 p-4 bg-gray-700/50 rounded-lg';
+                detailedAnalysis.innerHTML = `
+                    <h4 class="text-lg font-semibold mb-2 text-blue-400">
+                        <i class="fas fa-search mr-2"></i>Detailed Analysis
+                    </h4>
+                    <p class="text-gray-300">${data.detailed_reasoning}</p>
+                `;
+                confidenceLevelDiv.appendChild(detailedAnalysis);
+            }
+
+            // Show verification recommendations if available
+            if (data.verification_recommendations && data.verification_recommendations.length > 0) {
+                const recommendationsDiv = document.createElement('div');
+                recommendationsDiv.className = 'mt-6 p-4 bg-gray-700/50 rounded-lg';
+                recommendationsDiv.innerHTML = `
+                    <h4 class="text-lg font-semibold mb-2 text-yellow-400">
+                        <i class="fas fa-lightbulb mr-2"></i>Verification Steps
+                    </h4>
+                    <ul class="list-disc list-inside space-y-2">
+                        ${data.verification_recommendations.map(rec => `
+                            <li class="text-gray-300">${rec}</li>
+                        `).join('')}
+                    </ul>
+                `;
+                confidenceLevelDiv.appendChild(recommendationsDiv);
+            }
+        }
+
+        // Event listener for form submission
+        document.getElementById('newsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newsText = document.querySelector('textarea[name="text"]').value;
+            if (!newsText) {
+                alert('Please enter some text or URL to analyze');
+                return;
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+
+            try {
+                const response = await fetch('http://localhost:5000/data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({ 
+                        text: newsText
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (result.status) {
+                    showNotification('Analysis completed successfully!', 'success');
+                    displayResults(result);
+                } else {
+                    showNotification(result.message || 'Analysis failed. Please try again.');
+                }
+            } catch (error) {
+                document.getElementById('loading').classList.add('hidden');
+                showNotification(`Server error: ${error.message}`);
+                console.error('Error:', error);
+            }
+        });
+
+        // Voice Analysis Feature
+        document.getElementById('voiceButton').addEventListener('click', async () => {
+            const voiceButton = document.getElementById('voiceButton');
+            const voiceLoading = document.getElementById('voiceLoading');
+            const voiceAudio = document.getElementById('voiceAudio');
+            
+            // Disable button and show loading
+            voiceButton.disabled = true;
+            voiceLoading.classList.remove('hidden');
+            
+            try {
+                // Fetch the audio from the voice endpoint
+                const response = await fetch('http://localhost:5000/voice', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // Get the audio blob
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                // Set up audio player
+                voiceAudio.src = audioUrl;
+                voiceAudio.classList.remove('hidden');
+                voiceAudio.classList.add('w-full', 'max-w-md');
+                
+                // Play the audio
+                await voiceAudio.play();
+                
+                showNotification('Voice analysis is now playing', 'success');
+            } catch (error) {
+                console.error('Error fetching voice analysis:', error);
+                showNotification(`Failed to get voice analysis: ${error.message}`);
+            } finally {
+                // Re-enable button and hide loading
+                voiceButton.disabled = false;
+                voiceLoading.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html> 

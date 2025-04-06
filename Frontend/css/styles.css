@@ -1,0 +1,88 @@
+@keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.gradient-animate {
+    background: linear-gradient(-45deg, #1a1a1a, #2d3748, #1a365d, #2d3748);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+}
+
+.slide-up {
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.scale-up {
+    animation: scaleUp 0.3s ease-out;
+}
+
+@keyframes scaleUp {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.notification {
+    position: fixed;
+    right: -100%;
+    top: 20px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    color: white;
+    transition: right 0.5s ease-in-out;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.notification.show {
+    right: 20px;
+}
+
+.notification.success {
+    background: linear-gradient(to right, #34d399, #059669);
+}
+
+.notification.error {
+    background: linear-gradient(to right, #ef4444, #dc2626);
+}
+
+.notification-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+    transform-origin: left;
+    background: rgba(255, 255, 255, 0.5);
+    animation: progress 3s linear;
+}
+
+@keyframes progress {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+} 
